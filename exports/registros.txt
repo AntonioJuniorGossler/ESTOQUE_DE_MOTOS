@@ -1,0 +1,153 @@
+
+====================
+DATA: 2026-06-23 16:31:44.723099
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-06-23 16:32:02.024704
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-06-24 14:00:25.942419
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-06-24 14:03:23.953539
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-06-24 14:03:50.942761
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-06-24 14:05:21.418908
+TAG: RFID0001
+MODELO: TESTE123
+COR: PRETA
+ANO: 2025
+CHASSI: ABC1234
+====================
+
+====================
+DATA: 2026-07-16 11:35:55.207257
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:45:14.614197
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:45:18.180706
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:45:25.584202
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:45:52.377514
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:46:45.942147
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 11:47:05.290501
+TAG: 1
+MODELO: bhtrd
+COR: hfg hjgf
+ANO: 2026
+CHASSI: btgdgfd
+====================
+
+====================
+DATA: 2026-07-16 15:13:57.305615
+TAG: 2
+MODELO: ghfdh
+COR: fdg
+ANO: 2026
+CHASSI: fdsfgd5252
+====================
+
+====================
+DATA: 2026-07-16 15:30:53.970061
+TAG: 2
+MODELO: ghfdh
+COR: fdg
+ANO: 2026
+CHASSI: fdsfgd5252
+====================
+
+====================
+DATA: 2026-07-21 15:36:15.824824
+TAG: 7
+MODELO: START
+COR: PRATA
+ANO: 2026
+CHASSI: 45GS4D6F46SDGDFSGDS
+====================
+
+====================
+DATA: 2026-08-24 11:53:54.438867
+TAG: 2
+MODELO: PCX 160 ABS
+COR: AZUL PEROLIZADA
+ANO: 2026/2027
+CHASSI: 9C2KF5210VR003232
+====================

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Painel RFID de Motos</title>
+
+    <style>
+
+        body{
+            font-family: Arial;
+            background:#f5f5f5;
+            margin:40px;
+        }
+
+        h1{
+            text-align:center;
+            color:#1f3b73;
+        }
+
+        .menu{
+            text-align:center;
+            margin-bottom:30px;
+        }
+
+        .menu a{
+            text-decoration:none;
+            background:#1f6feb;
+            color:white;
+            padding:10px 20px;
+            border-radius:5px;
+            margin:5px;
+        }
+
+        .menu a:hover{
+            background:#0047b3;
+        }
+
+        .card{
+
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0 0 10px rgba(0,0,0,.15);
+            margin-bottom:30px;
+
+        }
+
+        table{
+
+            width:100%;
+            border-collapse:collapse;
+
+        }
+
+    th,td {
+        padding: 12px;
+        text-align: left; /* Alinha tudo à esquerda */
+    }
+
+    th {
+        background: #2f5fd7;
+        color: white;
+    }
+
+    td {
+        border-bottom: 1px solid #ddd;
+    }
+
+        input{
+
+            padding:10px;
+            width:120px;
+
+        }
+
+        button{
+
+            padding:10px 20px;
+            background:#28a745;
+            color:white;
+            border:none;
+            cursor:pointer;
+            border-radius:5px;
+
+        }
+
+        button:hover{
+
+            background:#218838;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>Painel RFID de Motos</h1>
+
+<div class="menu">
+<nav class="navbar">
+    <a href="/">Início</a>
+    <a href="/cadastrar">Cadastrar Moto</a>
+    <a href="/leituras">Leituras</a>
+    <a href="/importar">Importar arquivos</a>
+    <a href="/relatorios">Relatórios</a>
+    <a href="/ler">Simular Leitura</a>
+</nav>
+</div>
+
+
+<div class="card">
+
+<h2>Total de Motos</h2>
+
+<h1>{{ motos|length }}</h1>
+
+</div>
+
+
+<div class="card">
+
+<h2>Simular Leitura RFID</h2>
+
+<form action="/ler" method="GET">
+
+    <label>Digite a TAG (1 a 10)</label><br><br>
+
+    <input
+        type="number"
+        name="tag"
+        min="1"
+        max="10"
+        required
+    >
+
+    <button type="submit">
+
+        Ler RFID
+
+    </button>
+
+</form>
+
+</div>
+
+
+<div class="card">
+
+<h2>Motos Cadastradas</h2>
+<table>
+<thead>
+<tr>
+
+    <th>TAG</th>
+    <th>CHASSI</th>
+    <th>MODELO</th>
+    <th>COR</th>
+    <th>ANO</th>
+    <th>PLACA</th>
+    <th>LOCAL</th>
+    <th>AÇÕES</th>
+
+</tr>
+</thead>
+<tbody>
+
+{% for moto in motos %}
+
+<tr class="caracteristicas-moto">
+
+    <td>{{ moto.tag_rfid }}</td>
+    <td>{{ moto.chassi }}</td>
+    <td>{{ moto.modelo }}</td>
+    <td>{{ moto.cor }}</td>
+    <td>{{ moto.ano }}</td>
+    <td>{{ moto.placa }}</td>
+    <td>{{ moto.local_atual }}</td>
+
+    <td>
+
+        <a href="/desvincular/{{ moto.id }}"
+           onclick="return confirm('Deseja realmente liberar esta TAG RFID?')">
+
+            <button style="
+                background:#dc3545;
+                color:white;
+                border:none;
+                padding:8px 15px;
+                border-radius:5px;
+                cursor:pointer;
+            ">
+                Liberar TAG
+            </button>
+
+        </a>
+
+    </td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+</body>
+</html>
