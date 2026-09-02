@@ -1,8 +1,5 @@
-from flask import Flask, render_template, request, redirect, flash, send_file
+from flask import Flask, render_template, request, redirect, flash, send_file, send_from_directory
 from config import Config
-import csv
-import io
-
 from database import (
     db,
     Moto,
@@ -10,19 +7,37 @@ from database import (
     Leitura,
     HistoricoMoto
 )
-
 from utils.exportador import exportar_txt
 from datetime import datetime
-
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from io import BytesIO
+import csv
+import io
+import os
 
-# Simulador RFID
-from leitores.simulador import ler_tag
+
+# ============================================================
+# CAMINHO DA PASTA PRINCIPAL DO PROJETO
+# ============================================================
+
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
 
-app = Flask(__name__)
+# ============================================================
+# CONFIGURAÇÃO DO FLASK
+#
+# Os arquivos HTML estão na mesma pasta do app.py
+# ============================================================
+
+app = Flask(
+    __name__,
+    template_folder=BASE_DIR,
+    static_folder=None
+)
+
 app.config.from_object(Config)
 
 app.secret_key = "rfidmotos123"
@@ -30,18 +45,37 @@ app.secret_key = "rfidmotos123"
 db.init_app(app)
 
 
-# ==========================================
+# ============================================================
 # CRIA O BANCO
-# NÃO APAGA MAIS OS DADOS
-# ==========================================
+#
+# NÃO APAGA OS DADOS EXISTENTES
+# ============================================================
+
 with app.app_context():
     db.create_all()
 
 
-# ==========================================
+# ============================================================
+# CSS
+#
+# O style.css está na raiz do projeto
+# ============================================================
+
+@app.route("/style.css")
+def style_css():
+
+    return send_from_directory(
+        BASE_DIR,
+        "style.css",
+        mimetype="text/css"
+    )
+
+
+# ============================================================
 # PÁGINA INICIAL
-# ==========================================
-@app.route('/')
+# ============================================================
+
+@app.route("/")
 def index():
 
     motos = Moto.query.order_by(
@@ -49,22 +83,24 @@ def index():
     ).all()
 
     return render_template(
-        'index.html',
+        "index.html",
         motos=motos
     )
 
 
-# ==========================================
+# ============================================================
 # CADASTRAR MOTO
-# ==========================================
-@app.route('/cadastrar', methods=['GET', 'POST'])
+# ============================================================
+
+@app.route("/cadastrar", methods=["GET", "POST"])
 def cadastrar():
 
-    if request.method == 'POST':
+    if request.method == "POST":
 
-        # ------------------------------------------
-        # PEGA OS DADOS DO FORMULÁRIO
-        # ------------------------------------------
+        # ----------------------------------------------------
+        # DADOS DO FORMULÁRIO
+        # ----------------------------------------------------
+
         tag_texto = request.form.get(
             "tag",
             ""
@@ -101,9 +137,10 @@ def cadastrar():
         ).strip()
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # VERIFICA TAG
-        # ------------------------------------------
+        # ----------------------------------------------------
+
         try:
 
             tag = int(tag_texto)
@@ -128,9 +165,10 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
-        # VERIFICA SE A TAG JÁ ESTÁ CADASTRADA
-        # ------------------------------------------
+        # ----------------------------------------------------
+        # VERIFICA SE A TAG JÁ ESTÁ EM USO
+        # ----------------------------------------------------
+
         if Moto.query.filter_by(
             tag_rfid=tag
         ).first():
@@ -143,9 +181,10 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
-        # VERIFICA CAMPOS OBRIGATÓRIOS
-        # ------------------------------------------
+        # ----------------------------------------------------
+        # CAMPOS OBRIGATÓRIOS
+        # ----------------------------------------------------
+
         if not chassi:
 
             flash(
@@ -186,9 +225,10 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # PROCURA O CHASSI NO ARQUIVO IMPORTADO
-        # ------------------------------------------
+        # ----------------------------------------------------
+
         moto_importada = MotoImportada.query.filter_by(
             chassi=chassi
         ).first()
@@ -204,9 +244,10 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # VERIFICA SE O CHASSI JÁ FOI CADASTRADO
-        # ------------------------------------------
+        # ----------------------------------------------------
+
         if Moto.query.filter_by(
             chassi=moto_importada.chassi
         ).first():
@@ -219,13 +260,24 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # COMPARA MODELO
-        # ------------------------------------------
-        if (
-            modelo_digitado.upper()
-            != moto_importada.modelo.strip().upper()
-        ):
+        # ----------------------------------------------------
+
+        modelo_formulario = (
+            modelo_digitado
+            .strip()
+            .upper()
+        )
+
+        modelo_arquivo = (
+            moto_importada.modelo
+            .strip()
+            .upper()
+        )
+
+
+        if modelo_formulario != modelo_arquivo:
 
             flash(
                 f"Modelo incorreto para este chassi. "
@@ -236,13 +288,24 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # COMPARA COR
-        # ------------------------------------------
-        if (
-            cor_digitada.upper()
-            != moto_importada.cor.strip().upper()
-        ):
+        # ----------------------------------------------------
+
+        cor_formulario = (
+            cor_digitada
+            .strip()
+            .upper()
+        )
+
+        cor_arquivo = (
+            moto_importada.cor
+            .strip()
+            .upper()
+        )
+
+
+        if cor_formulario != cor_arquivo:
 
             flash(
                 f"Cor incorreta para este chassi. "
@@ -253,13 +316,22 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # COMPARA ANO
-        # ------------------------------------------
-        if (
+        # ----------------------------------------------------
+
+        ano_formulario = (
             ano_digitado
-            != moto_importada.ano.strip()
-        ):
+            .strip()
+        )
+
+        ano_arquivo = (
+            moto_importada.ano
+            .strip()
+        )
+
+
+        if ano_formulario != ano_arquivo:
 
             flash(
                 f"Ano incorreto para este chassi. "
@@ -270,9 +342,10 @@ def cadastrar():
             return redirect("/cadastrar")
 
 
-        # ------------------------------------------
+        # ----------------------------------------------------
         # CRIA A MOTO
-        # ------------------------------------------
+        # ----------------------------------------------------
+
         nova = Moto(
 
             tag_rfid=tag,
@@ -292,6 +365,7 @@ def cadastrar():
             local_atual="MONTAGEM",
 
             status="AGUARDANDO"
+
         )
 
 
@@ -313,10 +387,11 @@ def cadastrar():
     )
 
 
-# ==========================================
-# SIMULAR LEITURA
-# ==========================================
-@app.route('/ler')
+# ============================================================
+# SIMULAR LEITURA RFID
+# ============================================================
+
+@app.route("/ler")
 def ler():
 
     tag = request.args.get(
@@ -347,7 +422,7 @@ def ler():
 
     leitura = Leitura(
 
-        tag_rfid=tag,
+        tag_rfid=str(tag),
 
         setor=setor,
 
@@ -372,18 +447,25 @@ def ler():
     )
 
 
-# ==========================================
-# DESVINCULAR MOTO
-# ==========================================
+# ============================================================
+# DESVINCULAR MOTO / LIBERAR TAG
+# ============================================================
+
 @app.route("/desvincular/<int:id>")
 def desvincular(id):
 
     moto = Moto.query.get_or_404(id)
 
 
+    # --------------------------------------------------------
+    # SALVA NO HISTÓRICO DE MOTOS
+    # --------------------------------------------------------
+
     historico = HistoricoMoto(
 
-        tag_rfid=moto.tag_rfid,
+        tag_rfid=str(
+            moto.tag_rfid
+        ),
 
         chassi=moto.chassi,
 
@@ -403,9 +485,15 @@ def desvincular(id):
     db.session.add(historico)
 
 
+    # --------------------------------------------------------
+    # REGISTRA A ENTREGA
+    # --------------------------------------------------------
+
     leitura = Leitura(
 
-        tag_rfid=moto.tag_rfid,
+        tag_rfid=str(
+            moto.tag_rfid
+        ),
 
         setor="MOTO ENTREGUE",
 
@@ -418,18 +506,32 @@ def desvincular(id):
 
     db.session.add(leitura)
 
+
+    # --------------------------------------------------------
+    # REMOVE A MOTO DO CADASTRO ATIVO
+    #
+    # A TAG fica livre para ser usada novamente
+    # --------------------------------------------------------
+
     db.session.delete(moto)
 
     db.session.commit()
 
 
+    flash(
+        "Moto desvinculada e TAG liberada com sucesso!",
+        "sucesso"
+    )
+
+
     return redirect("/")
 
 
-# ==========================================
-# LEITURAS
-# ==========================================
-@app.route('/leituras')
+# ============================================================
+# LEITURAS RFID
+# ============================================================
+
+@app.route("/leituras")
 def leituras():
 
     lista = Leitura.query.order_by(
@@ -438,14 +540,25 @@ def leituras():
 
 
     return render_template(
-        'leituras.html',
+        "leituras.html",
         leituras=lista
     )
 
 
-# ==========================================
-# IMPORTAR ARQUIVO TXT / CSV
-# ==========================================
+# ============================================================
+# IMPORTAR TXT / CSV
+#
+# Aceita:
+#
+# CHASSI,MODELO,COR,ANO
+#
+# ou
+#
+# CHASSI;MODELO;COR;ANO
+#
+# Não apaga os arquivos anteriores.
+# ============================================================
+
 @app.route("/importar", methods=["GET", "POST"])
 def importar():
 
@@ -456,9 +569,10 @@ def importar():
         )
 
 
-        # ------------------------------------------
-        # VERIFICA SE FOI SELECIONADO UM ARQUIVO
-        # ------------------------------------------
+        # ----------------------------------------------------
+        # VERIFICA ARQUIVO
+        # ----------------------------------------------------
+
         if (
             arquivo is None
             or arquivo.filename == ""
@@ -474,18 +588,33 @@ def importar():
 
         try:
 
-            # ------------------------------------------
+            # ------------------------------------------------
             # LÊ O ARQUIVO
-            # ------------------------------------------
+            # ------------------------------------------------
+
             conteudo = arquivo.read().decode(
                 "utf-8-sig"
             )
 
 
-            # ------------------------------------------
+            if not conteudo.strip():
+
+                flash(
+                    "O arquivo está vazio.",
+                    "erro"
+                )
+
+                return redirect("/importar")
+
+
+            linhas = conteudo.splitlines()
+
+
+            # ------------------------------------------------
             # IDENTIFICA O SEPARADOR
-            # ------------------------------------------
-            primeira_linha = conteudo.splitlines()[0]
+            # ------------------------------------------------
+
+            primeira_linha = linhas[0]
 
 
             if ";" in primeira_linha:
@@ -506,49 +635,116 @@ def importar():
             )
 
 
+            # ------------------------------------------------
+            # NORMALIZA CABEÇALHOS
+            # ------------------------------------------------
+
+            if leitor.fieldnames:
+
+                leitor.fieldnames = [
+
+                    coluna.strip().upper()
+
+                    for coluna
+                    in leitor.fieldnames
+
+                ]
+
+
+            colunas_obrigatorias = [
+                "CHASSI",
+                "MODELO",
+                "COR",
+                "ANO"
+            ]
+
+
+            colunas_encontradas = (
+                leitor.fieldnames or []
+            )
+
+
+            faltando = [
+
+                coluna
+
+                for coluna
+                in colunas_obrigatorias
+
+                if coluna
+                not in colunas_encontradas
+
+            ]
+
+
+            if faltando:
+
+                flash(
+                    "Erro no arquivo. "
+                    "Colunas não encontradas: "
+                    + ", ".join(faltando),
+                    "erro"
+                )
+
+                return redirect("/importar")
+
+
             importadas = 0
 
             duplicadas = 0
 
 
-            # ------------------------------------------
-            # IMPORTA OS REGISTROS
-            # ------------------------------------------
+            # ------------------------------------------------
+            # PROCESSA LINHAS
+            # ------------------------------------------------
+
             for linha in leitor:
 
-                chassi = linha.get(
-                    "CHASSI",
-                    ""
+                chassi = (
+                    linha.get(
+                        "CHASSI",
+                        ""
+                    ) or ""
                 ).strip()
 
 
-                modelo = linha.get(
-                    "MODELO",
-                    ""
+                modelo = (
+                    linha.get(
+                        "MODELO",
+                        ""
+                    ) or ""
                 ).strip()
 
 
-                cor = linha.get(
-                    "COR",
-                    ""
+                cor = (
+                    linha.get(
+                        "COR",
+                        ""
+                    ) or ""
                 ).strip()
 
 
-                ano = linha.get(
-                    "ANO",
-                    ""
+                ano = (
+                    linha.get(
+                        "ANO",
+                        ""
+                    ) or ""
                 ).strip()
 
 
-                # Ignora linha vazia
+                # --------------------------------------------
+                # IGNORA LINHA VAZIA
+                # --------------------------------------------
+
                 if not chassi:
 
                     continue
 
 
-                # ------------------------------------------
-                # VERIFICA SE O CHASSI JÁ EXISTE
-                # ------------------------------------------
+                # --------------------------------------------
+                # VERIFICA DUPLICIDADE
+                # --------------------------------------------
+
                 existente = MotoImportada.query.filter_by(
                     chassi=chassi
                 ).first()
@@ -561,9 +757,10 @@ def importar():
                     continue
 
 
-                # ------------------------------------------
-                # NOVA MOTO IMPORTADA
-                # ------------------------------------------
+                # --------------------------------------------
+                # ADICIONA NOVA MOTO IMPORTADA
+                # --------------------------------------------
+
                 nova = MotoImportada(
 
                     chassi=chassi,
@@ -585,9 +782,10 @@ def importar():
             db.session.commit()
 
 
-            # ------------------------------------------
-            # MENSAGEM
-            # ------------------------------------------
+            # ------------------------------------------------
+            # RESULTADO
+            # ------------------------------------------------
+
             flash(
 
                 f"Arquivo importado com sucesso! "
@@ -628,51 +826,67 @@ def importar():
     )
 
 
-# ==========================================
+# ============================================================
 # RELATÓRIOS
-# ==========================================
+# ============================================================
+
 @app.route("/relatorios")
 def relatorios():
 
+    motos = Moto.query.order_by(
+        Moto.id.desc()
+    ).all()
+
+
     return render_template(
-        "relatorios.html"
+        "relatorios.html",
+        motos=motos
     )
 
-# ==========================================
+
+# ============================================================
 # EXPORTAR RELATÓRIO PARA EXCEL
 # COM FILTRO DE DATA
-# ==========================================
+# ============================================================
+
 @app.route("/relatorios/exportar")
 def exportar_relatorio():
 
-    # ------------------------------------------
-    # RECEBE AS DATAS INFORMADAS PELO USUÁRIO
-    # ------------------------------------------
     data_inicial_texto = request.args.get(
         "data_inicial",
         ""
     ).strip()
+
 
     data_final_texto = request.args.get(
         "data_final",
         ""
     ).strip()
 
-    # ------------------------------------------
-    # VERIFICA SE AS DATAS FORAM INFORMADAS
-    # ------------------------------------------
-    if not data_inicial_texto or not data_final_texto:
+
+    # --------------------------------------------------------
+    # VERIFICA DATAS
+    # --------------------------------------------------------
+
+    if (
+        not data_inicial_texto
+        or not data_final_texto
+    ):
 
         flash(
             "Informe a data inicial e a data final.",
             "erro"
         )
 
-        return redirect("/relatorios")
+        return redirect(
+            "/relatorios"
+        )
 
-    # ------------------------------------------
-    # CONVERTE AS DATAS
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # CONVERTE DATAS
+    # --------------------------------------------------------
+
     try:
 
         data_inicial = datetime.strptime(
@@ -680,14 +894,16 @@ def exportar_relatorio():
             "%Y-%m-%d"
         )
 
-        # Coloca o final do dia na data final
+
         data_final = datetime.strptime(
             data_final_texto,
             "%Y-%m-%d"
         ).replace(
+
             hour=23,
             minute=59,
             second=59
+
         )
 
     except ValueError:
@@ -697,12 +913,15 @@ def exportar_relatorio():
             "erro"
         )
 
-        return redirect("/relatorios")
+        return redirect(
+            "/relatorios"
+        )
 
-    # ------------------------------------------
-    # VERIFICA SE A DATA INICIAL É MAIOR
-    # QUE A DATA FINAL
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # VERIFICA PERÍODO
+    # --------------------------------------------------------
+
     if data_inicial > data_final:
 
         flash(
@@ -710,30 +929,81 @@ def exportar_relatorio():
             "erro"
         )
 
-        return redirect("/relatorios")
+        return redirect(
+            "/relatorios"
+        )
 
-    # ------------------------------------------
-    # BUSCA AS MOTOS NO PERÍODO INFORMADO
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # BUSCA MOTOS DO PERÍODO
+    # --------------------------------------------------------
+
     motos = Moto.query.filter(
+
         Moto.data_cadastro >= data_inicial,
+
         Moto.data_cadastro <= data_final
+
     ).order_by(
+
         Moto.data_cadastro.asc()
+
     ).all()
 
-    # ------------------------------------------
-    # CRIA PLANILHA EXCEL
-    # ------------------------------------------
+
+    # ========================================================
+    # CRIA EXCEL
+    # ========================================================
+
     wb = Workbook()
 
     ws = wb.active
 
     ws.title = "Relatório de Motos"
 
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # TÍTULO
+    # --------------------------------------------------------
+
+    ws["A1"] = "RELATÓRIO DE MOTOS CADASTRADAS"
+
+    ws["A1"].font = Font(
+        bold=True,
+        size=16
+    )
+
+    ws.merge_cells(
+        "A1:J1"
+    )
+
+
+    ws["A2"] = "PERÍODO"
+
+    ws["A2"].font = Font(
+        bold=True
+    )
+
+
+    ws["B2"] = (
+
+        data_inicial.strftime(
+            "%d/%m/%Y"
+        )
+
+        + " até "
+
+        + data_final.strftime(
+            "%d/%m/%Y"
+        )
+
+    )
+
+
+    # --------------------------------------------------------
     # CABEÇALHO
-    # ------------------------------------------
+    # --------------------------------------------------------
+
     cabecalho = [
 
         "DATA DO CADASTRO",
@@ -758,12 +1028,21 @@ def exportar_relatorio():
 
     ]
 
-    ws.append(cabecalho)
 
-    # ------------------------------------------
-    # ESTILO DO CABEÇALHO
-    # ------------------------------------------
-    for celula in ws[1]:
+    linha_cabecalho = 4
+
+
+    for coluna, titulo in enumerate(
+        cabecalho,
+        start=1
+    ):
+
+        celula = ws.cell(
+            row=linha_cabecalho,
+            column=coluna
+        )
+
+        celula.value = titulo
 
         celula.font = Font(
             bold=True
@@ -774,12 +1053,18 @@ def exportar_relatorio():
             vertical="center"
         )
 
-    # ------------------------------------------
-    # ADICIONA AS MOTOS
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # DADOS
+    # --------------------------------------------------------
+
+    linha_excel = 5
+
+
     for moto in motos:
 
         data_cadastro = ""
+
 
         if moto.data_cadastro:
 
@@ -787,7 +1072,8 @@ def exportar_relatorio():
                 "%d/%m/%Y %H:%M:%S"
             )
 
-        ws.append([
+
+        valores = [
 
             data_cadastro,
 
@@ -801,26 +1087,61 @@ def exportar_relatorio():
 
             moto.ano,
 
-            moto.placa,
+            moto.placa or "",
 
-            moto.montador,
+            moto.montador or "",
 
-            moto.local_atual,
+            moto.local_atual or "",
 
-            moto.status
+            moto.status or ""
 
-        ])
+        ]
 
-    # ------------------------------------------
-    # LARGURA DAS COLUNAS
-    # ------------------------------------------
+
+        for coluna, valor in enumerate(
+            valores,
+            start=1
+        ):
+
+            celula = ws.cell(
+                row=linha_excel,
+                column=coluna
+            )
+
+            celula.value = valor
+
+            celula.alignment = Alignment(
+                vertical="center"
+            )
+
+
+        # Centraliza campos específicos
+
+        for coluna in [1, 2, 6]:
+
+            ws.cell(
+                row=linha_excel,
+                column=coluna
+            ).alignment = Alignment(
+                horizontal="center",
+                vertical="center"
+            )
+
+
+        linha_excel += 1
+
+
+    # --------------------------------------------------------
+    # LARGURAS
+    # --------------------------------------------------------
+
     larguras = {
 
         "A": 22,
         "B": 12,
         "C": 25,
-        "D": 20,
-        "E": 20,
+        "D": 28,
+        "E": 22,
         "F": 15,
         "G": 15,
         "H": 25,
@@ -829,69 +1150,61 @@ def exportar_relatorio():
 
     }
 
+
     for coluna, largura in larguras.items():
 
         ws.column_dimensions[
             coluna
         ].width = largura
 
-    # ------------------------------------------
-    # CONGELA O CABEÇALHO
-    # ------------------------------------------
-    ws.freeze_panes = "A2"
 
-    # ------------------------------------------
-    # ALINHAMENTO
-    # ------------------------------------------
-    for linha in ws.iter_rows(
-        min_row=2
-    ):
+    # --------------------------------------------------------
+    # CONGELA CABEÇALHO
+    # --------------------------------------------------------
 
-        linha[0].alignment = Alignment(
-            horizontal="center"
-        )
+    ws.freeze_panes = "A5"
 
-        linha[1].alignment = Alignment(
-            horizontal="center"
-        )
 
-        linha[5].alignment = Alignment(
-            horizontal="center"
-        )
+    # --------------------------------------------------------
+    # GERA ARQUIVO
+    # --------------------------------------------------------
 
-        linha[6].alignment = Alignment(
-            horizontal="center"
-        )
-
-    # ------------------------------------------
-    # GERA O EXCEL NA MEMÓRIA
-    # ------------------------------------------
     arquivo = BytesIO()
 
-    wb.save(arquivo)
+    wb.save(
+        arquivo
+    )
 
     arquivo.seek(0)
 
-    # ------------------------------------------
+
+    # --------------------------------------------------------
     # NOME DO ARQUIVO
-    # ------------------------------------------
+    # --------------------------------------------------------
+
     nome_arquivo = (
 
         "relatorio_motos_"
 
-        + data_inicial.strftime("%d-%m-%Y")
+        + data_inicial.strftime(
+            "%d-%m-%Y"
+        )
 
         + "_a_"
 
-        + data_final.strftime("%d-%m-%Y")
+        + data_final.strftime(
+            "%d-%m-%Y"
+        )
 
         + ".xlsx"
 
     )
 
-    # ------------------------------------------
-    # DOWNLOAD
-    # ------------------------------------------
+
+    # --------------------------------------------------------
+    # ENVIA EXCEL
+    # --------------------------------------------------------
+
     return send_file(
 
         arquivo,
@@ -906,25 +1219,32 @@ def exportar_relatorio():
         )
 
     )
-# ==========================================
-# SIMULAR TAG ESPECÍFICA (1 A 10)
-# ==========================================
-@app.route('/ler/<int:tag>')
+
+
+# ============================================================
+# SIMULAR TAG ESPECÍFICA
+# ============================================================
+
+@app.route("/ler/<int:tag>")
 def ler_manual(tag):
 
     if tag < 1 or tag > 10:
 
         return "TAG inválida."
 
+
     moto = Moto.query.filter_by(
         tag_rfid=tag
     ).first()
+
 
     if moto is None:
 
         return f"TAG {tag} não cadastrada."
 
+
     moto.local_atual = "MONTAGEM"
+
 
     if hasattr(
         moto,
@@ -933,9 +1253,10 @@ def ler_manual(tag):
 
         moto.status = "EM PROCESSO"
 
+
     leitura = Leitura(
 
-        tag_rfid=tag,
+        tag_rfid=str(tag),
 
         setor="MONTAGEM",
 
@@ -944,19 +1265,46 @@ def ler_manual(tag):
         )
 
     )
+
+
     db.session.add(leitura)
+
     db.session.commit()
 
+
     exportar_txt(moto)
+
+
     return render_template(
         "resultado.html",
         moto=moto
     )
 
-# ==========================================
+
+# ============================================================
 # INICIA O SERVIDOR
-# ==========================================
+# ============================================================
+
 if __name__ == "__main__":
+
+    print()
+    print("==============================================")
+    print("       SISTEMA RFID DE RASTREAMENTO")
+    print("==============================================")
+    print()
+    print("Arquivos HTML: pasta raiz")
+    print("CSS:           pasta raiz")
+    print()
+    print("Servidor local:")
+    print("http://127.0.0.1:5000")
+    print()
+    print("Servidor na rede:")
+    print("http://IP-DO-SERVIDOR:5000")
+    print()
+    print("==============================================")
+    print()
+
+
     app.run(
         host="0.0.0.0",
         port=5000,
