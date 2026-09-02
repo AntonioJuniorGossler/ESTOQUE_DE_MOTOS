@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Importar Arquivo</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<nav class="navbar">
+    <a href="/">Início</a>
+    <a href="/cadastrar">Cadastrar Moto</a>
+    <a href="/leituras">Leituras</a>
+    <a href="/importar">Importar arquivos</a>
+    <a href="/relatorios">Relatórios</a>
+    <a href="/ler">Simular Leitura</a>
+</nav>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Importar Motos</h1>
+
+<form method="POST" enctype="multipart/form-data">
+
+<label>Arquivo CSV ou TXT</label>
+
+<input
+type="file"
+name="arquivo"
+accept=".csv,.txt"
+required>
+
+<br><br>
+
+<button type="submit">
+
+Importar Arquivo
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+</html>
